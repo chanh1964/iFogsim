@@ -102,6 +102,7 @@ public class Controller extends SimEntity{
 			printTimeDetails();
 			printPowerDetails();
 			printCostDetails();
+			printCostUnderCloud("d");
 			printNetworkUsageDetails();
 			System.exit(0);
 			break;
@@ -119,7 +120,19 @@ public class Controller extends SimEntity{
 				return dev;
 		return null;
 	}
-	
+
+	private void printCostUnderCloud(String name){
+		System.out.println("--------------------This is new ---------------------");
+		double total = 0.0;
+		for(FogDevice dev : getFogDevices())
+			if(dev.getName().startsWith(name)){
+				total += dev.getTotalCost();
+				System.out.println("Cost of execution in dev : " + dev.getName() + " " + dev.getTotalCost());
+			}
+		System.out.println("Cost of execution in all underCloud = "+total);
+		System.out.println("--------------------This is end ---------------------");
+	}
+
 	private void printCostDetails(){
 		System.out.println("Cost of execution in cloud = "+getCloud().getTotalCost());
 	}
