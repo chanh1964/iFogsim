@@ -45,8 +45,8 @@ public class CarAndFog {
 	static List<Sensor> sensors = new ArrayList<Sensor>();
 	static List<Actuator> actuators = new ArrayList<Actuator>();
 	
-//	static boolean CLOUD = false;
-	static boolean CLOUD = true;
+	static boolean CLOUD = false;
+//	static boolean CLOUD = true;
 	
 	static int numOfDepts = 2;
 	static int numOfMobilesPerDept = 30;
@@ -65,7 +65,7 @@ public class CarAndFog {
 
 			CloudSim.init(num_user, calendar, trace_flag);
 
-			String appId = "vr_game"; // identifier of the application
+			String appId = "dragonfly_its"; // identifier of the application
 			
 			FogBroker broker = new FogBroker("broker");
 			
@@ -269,11 +269,11 @@ public class CarAndFog {
 		 * Connecting the application modules (vertices) in the application model (directed graph) with edges
 		 */		
 		application.addAppEdge("GPS", "client", 3, 1, "GPS", Tuple.UP, AppEdge.SENSOR);
-		application.addAppEdge("client", "fog", 4, 100, "REQUEST", Tuple.UP, AppEdge.MODULE); // adding edge from Client to Concentration Calculator module carrying tuples of type _SENSOR
+		application.addAppEdge("client", "fog", 4, 50, "REQUEST", Tuple.UP, AppEdge.MODULE); // adding edge from Client to Concentration Calculator module carrying tuples of type _SENSOR
 		//application.addAppEdge("fog", "central", 100, 10, 1000, "PLAYER_GAME_STATE", Tuple.UP, AppEdge.MODULE); // adding periodic edge (period=1000ms) from Concentration Calculator to Connector module carrying tuples of type PLAYER_GAME_STATE
-		application.addAppEdge("fog", "client", 2, 100, "UPDATE_NODE_ID", Tuple.DOWN, AppEdge.MODULE);  // adding edge from Concentration Calculator to Client module carrying tuples of type CONCENTRATION
+		application.addAppEdge("fog", "client", 2, 50, "UPDATE_NODE_ID", Tuple.DOWN, AppEdge.MODULE);  // adding edge from Concentration Calculator to Client module carrying tuples of type CONCENTRATION
 		//application.addAppEdge("central", "client", 100, 28, 1000, "GLOBAL_GAME_STATE", Tuple.DOWN, AppEdge.MODULE); // adding periodic edge (period=1000ms) from Connector to Client module carrying tuples of type GLOBAL_GAME_STATE
-		application.addAppEdge("fog", "TRAFFIC_LIGHTS", 1, 100, "TRAFFIC_LIGHTS_CTRL", Tuple.DOWN, AppEdge.ACTUATOR);  // adding edge from Client module to Display (actuator) carrying tuples of type SELF_STATE_UPDATE
+		application.addAppEdge("fog", "TRAFFIC_LIGHTS", 1, 20, "TRAFFIC_LIGHTS_CTRL", Tuple.DOWN, AppEdge.ACTUATOR);  // adding edge from Client module to Display (actuator) carrying tuples of type SELF_STATE_UPDATE
 		application.addAppEdge("client", "DISPLAY", 1, 1, "DISPLAY", Tuple.DOWN, AppEdge.ACTUATOR);  // adding edge from Client module to Display (actuator) carrying tuples of type GLOBAL_STATE_UPDATE
 		
 		/*

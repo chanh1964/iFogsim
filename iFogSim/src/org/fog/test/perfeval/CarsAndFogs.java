@@ -40,21 +40,26 @@ import org.fog.utils.distribution.DeterministicDistribution;
  * @author Harshit Gupta
  *
  */
-public class DragonFLy3 {
+public class CarsAndFogs {
 	static List<FogDevice> fogDevices = new ArrayList<FogDevice>();
 	static List<Sensor> sensors = new ArrayList<Sensor>();
 	static List<Actuator> actuators = new ArrayList<Actuator>();
 	
-	static boolean CLOUD = true;
+	static boolean CLOUD = false;
+//	static boolean CLOUD = true;
 	
-	static int numOfDepts = 2;
-	static int numOfMobilesPerDept = 3;
+	//static int numOfAreas = 2;
+	static int numOfFogNodes = 2;
+	static int numOfCarsPerFogNode = 10;
 	static double EEG_TRANSMISSION_TIME = 5.1;
 	//static double EEG_TRANSMISSION_TIME = 10;
 	
 	public static void main(String[] args) {
 
-		Log.printLine("Starting VRGame...");
+		Log.printLine("Starting DragonFly ITS...");
+		Log.printLine("==========================");
+		Log.printLine("EXECUTION IN " + ((CLOUD)? "CLOUD" : "FOG") + " MODE");
+		Log.printLine("==========================");
 
 		try {
 			Log.disable();
@@ -64,7 +69,7 @@ public class DragonFLy3 {
 
 			CloudSim.init(num_user, calendar, trace_flag);
 
-			String appId = "vr_game"; // identifier of the application
+			String appId = "dragonfly_its"; // identifier of the application
 			
 			FogBroker broker = new FogBroker("broker");
 			
@@ -78,9 +83,9 @@ public class DragonFLy3 {
 			if(CLOUD){
 				// if the mode of deployment is cloud-based
 				/*moduleMapping.addModuleToDevice("connector", "cloud", numOfDepts*numOfMobilesPerDept); // fixing all instances of the Connector module to the Cloud
-				moduleMapping.addModuleToDevice("concentration_calculator", "cloud", numOfDepts*numOfMobilesPerDept); // fixing all instances of the Concentration Calculator module to the Cloud
-*/				moduleMapping.addModuleToDevice("connector", "cloud"); // fixing all instances of the Connector module to the Cloud
-				moduleMapping.addModuleToDevice("concentration_calculator", "cloud"); // fixing all instances of the Concentration Calculator module to the Cloud
+				moduleMapping.addModuleToDevice("fog", "cloud", numOfDepts*numOfMobilesPerDept); // fixing all instances of the Concentration Calculator module to the Cloud
+*/				moduleMapping.addModuleToDevice("central", "cloud"); // fixing all instances of the Connector module to the Cloud
+				moduleMapping.addModuleToDevice("fog", "cloud"); // fixing all instances of the Concentration Calculator module to the Cloud
 				for(FogDevice device : fogDevices){
 					if(device.getName().startsWith("m")){
 						//moduleMapping.addModuleToDevice("client", device.getName(), 1);  // fixing all instances of the Client module to the Smartphones
@@ -90,14 +95,15 @@ public class DragonFLy3 {
 			}else{
 				// if the mode of deployment is cloud-based
 				//moduleMapping.addModuleToDevice("connector", "cloud", numOfDepts*numOfMobilesPerDept); // fixing all instances of the Connector module to the Cloud
-				moduleMapping.addModuleToDevice("connector", "cloud"); // fixing all instances of the Connector module to the Cloud
+				moduleMapping.addModuleToDevice("central", "cloud"); // fixing all instances of the Connector module to the Cloud
 				for(FogDevice device : fogDevices){
 					if(device.getName().startsWith("m")){
 						//moduleMapping.addModuleToDevice("client", device.getName(), 1);  // fixing all instances of the Client module to the Smartphones
 						moduleMapping.addModuleToDevice("client", device.getName());  // fixing all instances of the Client module to the Smartphones
+						//moduleMapping.addModuleToDevice("fog", device.getName());
 					}
 					else if(device.getName().startsWith("d")){
-						moduleMapping.addModuleToDevice("concentration_calculator", device.getName());  // fixing all instances of the Client module to the Smartphones
+						moduleMapping.addModuleToDevice("fog", device.getName());  // fixing all instances of the Client module to the Smartphones
 					}
 				}
 				// rest of the modules will be placed by the Edge-ward placement policy
@@ -130,7 +136,7 @@ public class DragonFLy3 {
 	 * @param appId
 	 */
 	private static void createFogDevices(int userId, String appId) {
-		FogDevice cloud = createFogDevice("cloud", 684000, 128000, 10000, 10000, 0, 0.01, 16*103, 16*83.25); // creates the fog device Cloud at the apex of the hierarchy with level=0
+		FogDevice cloud = createFogDevice("cloud", 684000, 128000, 150, 150, 0, 0.01, 120, 50); // creates the fog device Cloud at the apex of the hierarchy with level=0
 		cloud.setParentId(-1);
 		/*FogDevice proxy = createFogDevice("proxy-server", 2800, 4000, 10000, 10000, 1, 0.0, 107.339, 83.4333); // creates the fog device Proxy Server (level=1)
 		proxy.setParentId(cloud.getId()); // setting Cloud as parent of the Proxy Server
@@ -139,40 +145,44 @@ public class DragonFLy3 {
 		fogDevices.add(cloud);
 		//fogDevices.add(proxy);
 		
-		for(int i=0;i<numOfDepts;i++){
+		for(int i=0;i<numOfFogNodes;i++){
 			addGw(i+"", userId, appId, cloud.getId()); // adding a fog device for every Gateway in physical topology. The parent of each gateway is the Proxy Server
 		}
 		
 	}
 
 	private static FogDevice addGw(String id, int userId, String appId, int parentId){
-		FogDevice dept = createFogDevice("d-"+id, 2200*16, 1000*16, 10000, 10000, 1, 0.01, 108, 85);
-		fogDevices.add(dept);
-		dept.setParentId(parentId);
-		dept.setUplinkLatency(4); // latency of connection between gateways and proxy server is 4 ms
-		for(int i=0;i<numOfMobilesPerDept;i++){
-			String mobileId = id+"-"+i;
-			FogDevice mobile = addMobile(mobileId, userId, appId, dept.getId()); // adding mobiles to the physical topology. Smartphones have been modeled as fog devices as well.
-			mobile.setUplinkLatency(2); // latency of connection between the smartphone and proxy server is 4 ms
-			fogDevices.add(mobile);
+		FogDevice fogNode = createFogDevice("d-"+id, 2200, 1000, 50, 50, 1, 0.01, 50, 10);
+		fogDevices.add(fogNode);
+		fogNode.setParentId(parentId);
+		fogNode.setUplinkLatency(100); // latency of connection between gateways and proxy server is 4 ms
+		for(int i=0;i<numOfCarsPerFogNode;i++){
+			String carId = id+"-"+i;
+			FogDevice car = addMobile(carId, userId, appId, fogNode.getId()); // adding mobiles to the physical topology. Smartphones have been modeled as fog devices as well.
+			car.setUplinkLatency(2); // latency of connection between the smartphone and proxy server is 4 ms
+			fogDevices.add(car);
 		}
-		return dept;
+		Actuator display = new Actuator("a-"+id, userId, appId, "TRAFFIC_LIGHTS");
+		actuators.add(display);		
+		display.setGatewayDeviceId(fogNode.getId());
+		display.setLatency(1.0);  // latency of connection between Display actuator and the parent Smartphone is 1 ms
+		return fogNode;
 	}
 	
 	private static FogDevice addMobile(String id, int userId, String appId, int parentId){
-		FogDevice mobile = createFogDevice("m-"+id, 2200, 1000, 100, 100, 2, 0.01, 58, 52);
+		FogDevice mobile = createFogDevice("m-"+id, 2200, 500, 10, 10, 2, 0.01, 10, 2);
 		mobile.setParentId(parentId);
-		for(int i=0;i<50;i++){
-			Sensor eegSensor = new Sensor("s-"+id+"-"+i, "EEG", userId, appId, new DeterministicDistribution(EEG_TRANSMISSION_TIME)); // inter-transmission time of EEG sensor follows a deterministic distribution
+		for(int i=0;i<1;i++){
+			Sensor eegSensor = new Sensor("s-"+id+"-"+i, "GPS", userId, appId, new DeterministicDistribution(EEG_TRANSMISSION_TIME)); // inter-transmission time of EEG sensor follows a deterministic distribution
 			sensors.add(eegSensor);
 			eegSensor.setGatewayDeviceId(mobile.getId());
 			eegSensor.setLatency(1.0);  // latency of connection between EEG sensors and the parent Smartphone is 6 ms
 		}		
-		Actuator display = new Actuator("a-"+id, userId, appId, "DISPLAY");
+		/*Actuator display = new Actuator("a-"+id, userId, appId, "DISPLAY");
 		actuators.add(display);		
 		display.setGatewayDeviceId(mobile.getId());
 		display.setLatency(1.0);  // latency of connection between Display actuator and the parent Smartphone is 1 ms
-		return mobile;
+*/		return mobile;
 	}
 	
 	/**
@@ -256,37 +266,44 @@ public class DragonFLy3 {
 		 * Adding modules (vertices) to the application model (directed graph)
 		 */
 		application.addAppModule("client", 10); // adding module Client to the application model
-		application.addAppModule("concentration_calculator", 10); // adding module Concentration Calculator to the application model
-		application.addAppModule("connector", 10); // adding module Connector to the application model
+		application.addAppModule("fog", 10); // adding module Concentration Calculator to the application model
+		application.addAppModule("central", 10); // adding module Connector to the application model
 		
 		/*
 		 * Connecting the application modules (vertices) in the application model (directed graph) with edges
-		 */
-		if(EEG_TRANSMISSION_TIME==10)
-			application.addAppEdge("EEG", "client", 20, 100, "EEG", Tuple.UP, AppEdge.SENSOR); // adding edge from EEG (sensor) to Client module carrying tuples of type EEG
-		else
-			application.addAppEdge("EEG", "client", 30, 100, "EEG", Tuple.UP, AppEdge.SENSOR);
-		application.addAppEdge("client", "concentration_calculator", 35, 100, "_SENSOR", Tuple.UP, AppEdge.MODULE); // adding edge from Client to Concentration Calculator module carrying tuples of type _SENSOR
-		application.addAppEdge("concentration_calculator", "connector", 100, 10, 1000, "PLAYER_GAME_STATE", Tuple.UP, AppEdge.MODULE); // adding periodic edge (period=1000ms) from Concentration Calculator to Connector module carrying tuples of type PLAYER_GAME_STATE
-		application.addAppEdge("concentration_calculator", "client", 14, 100, "CONCENTRATION", Tuple.DOWN, AppEdge.MODULE);  // adding edge from Concentration Calculator to Client module carrying tuples of type CONCENTRATION
-		application.addAppEdge("connector", "client", 100, 28, 1000, "GLOBAL_GAME_STATE", Tuple.DOWN, AppEdge.MODULE); // adding periodic edge (period=1000ms) from Connector to Client module carrying tuples of type GLOBAL_GAME_STATE
-		application.addAppEdge("client", "DISPLAY", 10, 100, "SELF_STATE_UPDATE", Tuple.DOWN, AppEdge.ACTUATOR);  // adding edge from Client module to Display (actuator) carrying tuples of type SELF_STATE_UPDATE
-		application.addAppEdge("client", "DISPLAY", 10, 100, "GLOBAL_STATE_UPDATE", Tuple.DOWN, AppEdge.ACTUATOR);  // adding edge from Client module to Display (actuator) carrying tuples of type GLOBAL_STATE_UPDATE
+		 */		
+		application.addAppEdge("GPS", "client", 2, 1, "GPS", Tuple.UP, AppEdge.SENSOR);
+		application.addAppEdge("client", "fog", 3, 100, "REQUEST", Tuple.UP, AppEdge.MODULE); // adding edge from Client to Concentration Calculator module carrying tuples of type _SENSOR
+		//application.addAppEdge("fog", "central", 100, 10, 1000, "PLAYER_GAME_STATE", Tuple.UP, AppEdge.MODULE); // adding periodic edge (period=1000ms) from Concentration Calculator to Connector module carrying tuples of type PLAYER_GAME_STATE
+		application.addAppEdge("fog", "client", 2, 100, "UPDATE_NODE_ID", Tuple.DOWN, AppEdge.MODULE);  // adding edge from Concentration Calculator to Client module carrying tuples of type CONCENTRATION
+		//application.addAppEdge("central", "client", 100, 28, 1000, "GLOBAL_GAME_STATE", Tuple.DOWN, AppEdge.MODULE); // adding periodic edge (period=1000ms) from Connector to Client module carrying tuples of type GLOBAL_GAME_STATE
+		application.addAppEdge("fog", "TRAFFIC_LIGHTS", 2, 100, "TRAFFIC_LIGHTS_CTRL", Tuple.DOWN, AppEdge.ACTUATOR);  // adding edge from Client module to Display (actuator) carrying tuples of type SELF_STATE_UPDATE
+		//application.addAppEdge("client", "DISPLAY", 1, 1, "DISPLAY", Tuple.DOWN, AppEdge.ACTUATOR);  // adding edge from Client module to Display (actuator) carrying tuples of type GLOBAL_STATE_UPDATE
 		
 		/*
 		 * Defining the input-output relationships (represented by selectivity) of the application modules. 
 		 */
-		application.addTupleMapping("client", "EEG", "_SENSOR", new FractionalSelectivity(0.9)); // 0.9 tuples of type _SENSOR are emitted by Client module per incoming tuple of type EEG 
-		application.addTupleMapping("client", "CONCENTRATION", "SELF_STATE_UPDATE", new FractionalSelectivity(1.0)); // 1.0 tuples of type SELF_STATE_UPDATE are emitted by Client module per incoming tuple of type CONCENTRATION 
-		application.addTupleMapping("concentration_calculator", "_SENSOR", "CONCENTRATION", new FractionalSelectivity(1.0)); // 1.0 tuples of type CONCENTRATION are emitted by Concentration Calculator module per incoming tuple of type _SENSOR 
-		application.addTupleMapping("client", "GLOBAL_GAME_STATE", "GLOBAL_STATE_UPDATE", new FractionalSelectivity(1.0)); // 1.0 tuples of type GLOBAL_STATE_UPDATE are emitted by Client module per incoming tuple of type GLOBAL_GAME_STATE 
-	
+		application.addTupleMapping("client", "GPS", "REQUEST", new FractionalSelectivity(0.9)); // 0.9 tuples of type _SENSOR are emitted by Client module per incoming tuple of type EEG 
+		//application.addTupleMapping("client", "UPDATE_NODE_ID", "DISPLAY", new FractionalSelectivity(1.0)); // 1.0 tuples of type SELF_STATE_UPDATE are emitted by Client module per incoming tuple of type CONCENTRATION 
+		application.addTupleMapping("fog", "REQUEST", "TRAFFIC_LIGHTS_CTRL", new FractionalSelectivity(1.0));
+		application.addTupleMapping("fog", "REQUEST", "UPDATE_NODE_ID", new FractionalSelectivity(1.0)); // 1.0 tuples of type CONCENTRATION are emitted by Concentration Calculator module per incoming tuple of type _SENSOR 
+		//application.addTupleMapping("client", "GLOBAL_GAME_STATE", "GLOBAL_STATE_UPDATE", new FractionalSelectivity(1.0)); // 1.0 tuples of type GLOBAL_STATE_UPDATE are emitted by Client module per incoming tuple of type GLOBAL_GAME_STATE 
+		//application.addTupleMapping("client", "GPS", "TRAFFIC_LIGHTS_CTRL", new FractionalSelectivity(1.0));
 		/*
 		 * Defining application loops to monitor the latency of. 
-		 * Here, we add only one loop for monitoring : EEG(sensor) -> Client -> Concentration Calculator -> Client -> DISPLAY (actuator)
+		 * Here, we add only one loop for monitoring : GPS(sensor) -> Client -> Concentration Calculator -> Client -> TRAFFIC_LIGHTS (actuator)
 		 */
-		final AppLoop loop1 = new AppLoop(new ArrayList<String>(){{add("EEG");add("client");add("concentration_calculator");add("client");add("DISPLAY");}});
-		List<AppLoop> loops = new ArrayList<AppLoop>(){{add(loop1);}};
+		if(!CLOUD){
+			application.addAppEdge("fog", "central", 60000, 100, 3000, "CONCENTRATION", Tuple.UP, AppEdge.MODULE);
+			application.addTupleMapping("fog", "REQUEST", "CONCENTRATION", new FractionalSelectivity(1.0));
+		}
+		
+		final AppLoop loop1 = new AppLoop(new ArrayList<String>(){{add("GPS");add("client");add("fog");}});
+		final AppLoop loop2 = new AppLoop(new ArrayList<String>(){{add("fog");add("client");}});
+		final AppLoop loop3 = new AppLoop(new ArrayList<String>(){{add("fog");add("TRAFFIC_LIGHTS");}});
+		final AppLoop loop4 = new AppLoop(new ArrayList<String>(){{add("fog");add("central");}});
+
+		List<AppLoop> loops = new ArrayList<AppLoop>(){{add(loop1);add(loop2);add(loop3);add(loop4);}};
 		application.setLoops(loops);
 		
 		return application;
