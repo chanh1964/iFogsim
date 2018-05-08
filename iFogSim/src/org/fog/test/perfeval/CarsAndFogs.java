@@ -49,8 +49,8 @@ public class CarsAndFogs {
 //	static boolean CLOUD = true;
 	
 	//static int numOfAreas = 2;
-	static int numOfFogNodes = 2;
-	static int numOfCarsPerFogNode = 10;
+	static int numOfFogNodes = 8;
+	static int numOfCarsPerFogNode = 30;
 	static double EEG_TRANSMISSION_TIME = 5.1;
 	//static double EEG_TRANSMISSION_TIME = 10;
 	
@@ -136,7 +136,7 @@ public class CarsAndFogs {
 	 * @param appId
 	 */
 	private static void createFogDevices(int userId, String appId) {
-		FogDevice cloud = createFogDevice("cloud", 684000, 128000, 150, 150, 0, 0.01, 120, 50); // creates the fog device Cloud at the apex of the hierarchy with level=0
+		FogDevice cloud = createFogDevice("cloud", 684000, 128000, 18750, 18750, 0, 0.01, 120, 50); // creates the fog device Cloud at the apex of the hierarchy with level=0
 		cloud.setParentId(-1);
 		/*FogDevice proxy = createFogDevice("proxy-server", 2800, 4000, 10000, 10000, 1, 0.0, 107.339, 83.4333); // creates the fog device Proxy Server (level=1)
 		proxy.setParentId(cloud.getId()); // setting Cloud as parent of the Proxy Server
@@ -152,7 +152,7 @@ public class CarsAndFogs {
 	}
 
 	private static FogDevice addGw(String id, int userId, String appId, int parentId){
-		FogDevice fogNode = createFogDevice("d-"+id, 2200, 1000, 50, 50, 1, 0.01, 50, 10);
+		FogDevice fogNode = createFogDevice("d-"+id, 2200, 1000, 6250, 6250, 1, 0.01, 50, 10);
 		fogDevices.add(fogNode);
 		fogNode.setParentId(parentId);
 		fogNode.setUplinkLatency(100); // latency of connection between gateways and proxy server is 4 ms
@@ -170,7 +170,7 @@ public class CarsAndFogs {
 	}
 	
 	private static FogDevice addMobile(String id, int userId, String appId, int parentId){
-		FogDevice mobile = createFogDevice("m-"+id, 2200, 500, 10, 10, 2, 0.01, 10, 2);
+		FogDevice mobile = createFogDevice("m-"+id, 2200, 500, 1250, 1250, 2, 0.01, 10, 2);
 		mobile.setParentId(parentId);
 		for(int i=0;i<1;i++){
 			Sensor eegSensor = new Sensor("s-"+id+"-"+i, "GPS", userId, appId, new DeterministicDistribution(EEG_TRANSMISSION_TIME)); // inter-transmission time of EEG sensor follows a deterministic distribution
@@ -265,19 +265,19 @@ public class CarsAndFogs {
 		/*
 		 * Adding modules (vertices) to the application model (directed graph)
 		 */
-		application.addAppModule("client", 10); // adding module Client to the application model
-		application.addAppModule("fog", 10); // adding module Concentration Calculator to the application model
-		application.addAppModule("central", 10); // adding module Connector to the application model
+		application.addAppModule("client", 500); // adding module Client to the application model
+		application.addAppModule("fog", 1000); // adding module Concentration Calculator to the application model
+		application.addAppModule("central", 64000); // adding module Connector to the application model
 		
 		/*
 		 * Connecting the application modules (vertices) in the application model (directed graph) with edges
 		 */		
 		application.addAppEdge("GPS", "client", 2, 1, "GPS", Tuple.UP, AppEdge.SENSOR);
-		application.addAppEdge("client", "fog", 3, 100, "REQUEST", Tuple.UP, AppEdge.MODULE); // adding edge from Client to Concentration Calculator module carrying tuples of type _SENSOR
+		application.addAppEdge("client", "fog", 3, 10, "REQUEST", Tuple.UP, AppEdge.MODULE); // adding edge from Client to Concentration Calculator module carrying tuples of type _SENSOR
 		//application.addAppEdge("fog", "central", 100, 10, 1000, "PLAYER_GAME_STATE", Tuple.UP, AppEdge.MODULE); // adding periodic edge (period=1000ms) from Concentration Calculator to Connector module carrying tuples of type PLAYER_GAME_STATE
-		application.addAppEdge("fog", "client", 2, 100, "UPDATE_NODE_ID", Tuple.DOWN, AppEdge.MODULE);  // adding edge from Concentration Calculator to Client module carrying tuples of type CONCENTRATION
+		application.addAppEdge("fog", "client", 2, 10, "UPDATE_NODE_ID", Tuple.DOWN, AppEdge.MODULE);  // adding edge from Concentration Calculator to Client module carrying tuples of type CONCENTRATION
 		//application.addAppEdge("central", "client", 100, 28, 1000, "GLOBAL_GAME_STATE", Tuple.DOWN, AppEdge.MODULE); // adding periodic edge (period=1000ms) from Connector to Client module carrying tuples of type GLOBAL_GAME_STATE
-		application.addAppEdge("fog", "TRAFFIC_LIGHTS", 2, 100, "TRAFFIC_LIGHTS_CTRL", Tuple.DOWN, AppEdge.ACTUATOR);  // adding edge from Client module to Display (actuator) carrying tuples of type SELF_STATE_UPDATE
+		application.addAppEdge("fog", "TRAFFIC_LIGHTS", 2, 10, "TRAFFIC_LIGHTS_CTRL", Tuple.DOWN, AppEdge.ACTUATOR);  // adding edge from Client module to Display (actuator) carrying tuples of type SELF_STATE_UPDATE
 		//application.addAppEdge("client", "DISPLAY", 1, 1, "DISPLAY", Tuple.DOWN, AppEdge.ACTUATOR);  // adding edge from Client module to Display (actuator) carrying tuples of type GLOBAL_STATE_UPDATE
 		
 		/*
@@ -293,10 +293,10 @@ public class CarsAndFogs {
 		 * Defining application loops to monitor the latency of. 
 		 * Here, we add only one loop for monitoring : GPS(sensor) -> Client -> Concentration Calculator -> Client -> TRAFFIC_LIGHTS (actuator)
 		 */
-		if(!CLOUD){
+		/*if(!CLOUD){
 			application.addAppEdge("fog", "central", 60000, 100, 3000, "CONCENTRATION", Tuple.UP, AppEdge.MODULE);
 			application.addTupleMapping("fog", "REQUEST", "CONCENTRATION", new FractionalSelectivity(1.0));
-		}
+		}*/
 		
 		final AppLoop loop1 = new AppLoop(new ArrayList<String>(){{add("GPS");add("client");add("fog");}});
 		final AppLoop loop2 = new AppLoop(new ArrayList<String>(){{add("fog");add("client");}});
